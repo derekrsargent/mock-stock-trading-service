@@ -4,8 +4,6 @@ let config = require('config');
 
 const app = express();
 
-// npm run test
-
 mongoose.connect(config.DBHost);
 const db = mongoose.connection;
 db.on('error', (error) => console.error(error));
