@@ -15,19 +15,19 @@ content-type: application/json
 
 {
     "user_id": "user3",
-    "stock_symbol": "AMC",
+    "stock_symbol": "GME",
     "order_type": "sell",
-    "units": 14,
-    "price": 90
+    "units": 30,
+    "price": 200
 }
 
 ###
 
-DELETE http://localhost:3000/619913621bb7613d0ecaf65a
+DELETE http://localhost:3000/61994329c1a1178d1306895b
 
 ###
 
-PATCH  http://localhost:3000/61979e034e3ea144ba311dea
+PATCH  http://localhost:3000/61994329c1a1178d1306895b
 content-type: application/json
 
 {

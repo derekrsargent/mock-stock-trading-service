@@ -1,1 +1,4 @@
-{ "DBHost": "mongodb://localhost/prod" }
+{ 
+    "DBHost": "mongodb://localhost/prod",
+    "numCPUs": 2 
+}

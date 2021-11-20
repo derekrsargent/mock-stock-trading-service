@@ -1,4 +1,5 @@
 process.env.NODE_ENV = 'test';
+process.env.NUM_CPU = 1;
 
 const assert = require('assert');
 const chai = require('chai');
