@@ -1,0 +1,26 @@
+html
+    body
+        h1 Open Orders
+
+        p Here is a list of all open orders:
+
+        ul
+            for order in orders
+                tr
+                    td
+                        | Order Id: #{order._id}
+                        br
+                        | User Id: #{order.user_id}
+                        br
+                        | Stock Symbol: #{order.stock_symbol}
+                        br
+                        | Order Type #{order.order_type}
+                        br
+                        | Units #{order.units}
+                        br
+                        | Price $#{order.price}
+                        br
+                        | Order Time #{order.order_time}
+                        br 
+                        br
+                        

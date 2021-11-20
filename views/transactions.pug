@@ -1,0 +1,23 @@
+html
+    body
+        h1 Completed Transactions
+
+        p Here is a list of all completed transactions:
+
+        ul
+            for transaction in transactions
+                tr
+                    td
+                        | Order Id: #{transaction._id}
+                        br
+                        | Stock Symbol: #{transaction.stock_symbol}
+                        br
+                        | Units: #{transaction.units}
+                        br
+                        | Price: $#{transaction.price}
+                        br
+                        | Buy Order Id #{transaction.buy_order_id}
+                        br
+                        | Sell Order Id #{transaction.sell_order_id}
+                        br
+                        br

@@ -1,0 +1,40 @@
+GET http://localhost:3000/orders/619796176fe4da1209b1207c
+
+###
+
+GET http://localhost:3000/transactions/JSON/
+
+###
+
+GET http://localhost:3000/orders/JSON/
+
+###
+
+GET http://localhost:3000/test/
+
+###
+
+POST http://localhost:3000/
+content-type: application/json
+
+{
+    "user_id": "user3",
+    "stock_symbol": "TSLA",
+    "order_type": "buy",
+    "units": 1,
+    "price": 1600.00
+}
+
+###
+
+DELETE http://localhost:3000/6198d7e3b6bab6c1955bbeb7
+
+###
+
+PATCH  http://localhost:3000/61979e034e3ea144ba311dea
+content-type: application/json
+
+{
+    "units": 40,
+    "price": 1596.38
+}

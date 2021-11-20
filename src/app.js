@@ -10,6 +10,8 @@ db.on('error', (error) => console.error(error));
 db.once('open', () => console.log('Connected to db'));
 
 app.use(express.json());
+app.set("view engine", "pug");
+//app.set("views", path.join(__dirname, "views"));
 
 const transactionsRouter = require('./routes');
 app.use('/', transactionsRouter);
