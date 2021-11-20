@@ -8,9 +8,8 @@ const app = express();
 
 // Set to two workers even though more are available
 // If in testing environment then don't horizontally scale
-const numWorkers = config.numCPUs > 1 ? 2 : config.numCPUs;
+const numWorkers = config.numCPUs > 1 ? 1 : config.numCPUs;
 if (cluster.isMaster && config.numCPUs > 1) {
-  console.log('no');
   for (let i = 0; i < numWorkers; i++) {
     cluster.fork();
   }
