@@ -1,8 +1,12 @@
 html
     body
-        h1 Completed Transactions
+        h1 Transaction Log
 
-        p Here is a list of all completed transactions:
+        a(href='/') Place an Order 
+        br     
+        a(href='orders') See Order Log
+
+        p Here is a list of all transactions:
 
         ul
             for transaction in transactions

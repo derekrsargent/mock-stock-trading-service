@@ -25,6 +25,16 @@ const orderSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
         required: true
+    },
+    is_filled: {
+        type: Boolean,
+        default: false,
+        required: true
+    },
+    is_partially_filled: {
+        type: Boolean,
+        default: false,
+        required: true
     }
 });
 

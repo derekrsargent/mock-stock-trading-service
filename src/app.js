@@ -11,6 +11,9 @@ db.once('open', () => console.log('Connected to db'));
 
 app.use(express.json());
 app.set("view engine", "pug");
+app.use(express.urlencoded({
+  extended: true
+}));
 //app.set("views", path.join(__dirname, "views"));
 
 const transactionsRouter = require('./routes');

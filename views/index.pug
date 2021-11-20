@@ -2,5 +2,31 @@ html
     body
         h1 Stock Trading Service
 
-        p Here is a list of all open orders:
+        a(href='orders') See Order Log
+        br   
+        a(href='transactions') See Transaction Log
+
+        p Submit an order:
+
+        block order
+            form(id="order" action="/" method="post")
+                input(type="text", name="user_id", value="", placeholder="User Id")
+                br
+                input(type="text", name="stock_symbol", value="", placeholder="Stock Symbol")
+                br
+                input(type="number", name="units", value="", placeholder="Units")
+                br
+                input(type="number", name="price", value="", placeholder="Price")
+                br
+                tr
+                    td 
+                        input(type="radio", name="order_type", value="buy", checked)
+                        |  Buy
+                        br
+                        input(type="radio", name="order_type", value="sell")
+                        |  Sell
+                br
+                br
+                input(type="submit" value="Submit Order")
+
 

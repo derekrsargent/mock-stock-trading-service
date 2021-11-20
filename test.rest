@@ -10,24 +10,20 @@ GET http://localhost:3000/orders/JSON/
 
 ###
 
-GET http://localhost:3000/test/
-
-###
-
 POST http://localhost:3000/
 content-type: application/json
 
 {
     "user_id": "user3",
-    "stock_symbol": "TSLA",
-    "order_type": "buy",
-    "units": 1,
-    "price": 1600.00
+    "stock_symbol": "AMC",
+    "order_type": "sell",
+    "units": 45,
+    "price": 50
 }
 
 ###
 
-DELETE http://localhost:3000/6198d7e3b6bab6c1955bbeb7
+DELETE http://localhost:3000/61990c30a98738bda8db2a58
 
 ###
 
@@ -38,3 +34,16 @@ content-type: application/json
     "units": 40,
     "price": 1596.38
 }
+
+###
+
+POST http://localhost:3000/test
+content-type: application/json
+
+{
+    "_id": "619913621bb7613d0ecaf65a",
+    "units": 44
+}
+
+###
+

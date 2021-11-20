@@ -1,8 +1,12 @@
 html
     body
-        h1 Open Orders
+        h1 Order Log
 
-        p Here is a list of all open orders:
+        a(href='/') Place an Order 
+        br    
+        a(href='transactions') See Transaction Log
+
+        p Here is a list of all orders:
 
         ul
             for order in orders
@@ -14,13 +18,17 @@ html
                         br
                         | Stock Symbol: #{order.stock_symbol}
                         br
-                        | Order Type #{order.order_type}
+                        | Order Type: #{order.order_type}
                         br
-                        | Units #{order.units}
+                        | Units: #{order.units}
                         br
-                        | Price $#{order.price}
+                        | Price: $#{order.price}
                         br
-                        | Order Time #{order.order_time}
+                        | Order Time: #{order.order_time}
+                        br 
+                        | Partially Filled?: #{order.is_partially_filled}
+                        br 
+                        | Fully Filled?: #{order.is_filled}
                         br 
                         br
                         
