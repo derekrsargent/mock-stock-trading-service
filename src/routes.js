@@ -36,10 +36,10 @@ const saveTransactionArr = async (transactionArr) => {
 // GET all orders
 router.get('/orders', async (req, res) => {
     try {
-        const orders = await Order.find()
+        const getOrders = await Order.find()
             .sort({ "order_time": -1 });
         res.status(200).render('orders', {
-            orders
+            getOrders
         });
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -94,7 +94,7 @@ router.post('/', async (req, res) => {
     let transactionArr = []; 
     let matchResults;
     const order = new Order({
-        //id: req.body.id,
+        id: req.body.id,
         user_id: req.body.user_id,
         stock_symbol: req.body.stock_symbol,
         order_type: req.body.order_type,
@@ -123,7 +123,7 @@ router.post('/', async (req, res) => {
                 ]
             }).sort({ "price": -1, "order_time": 1 })
     } catch (err) {
-        res.status(500).json({ message: err.message })
+        console.log(err);
     };
 
     // If the new order does not pair up partially/fully with any existing order
@@ -132,7 +132,7 @@ router.post('/', async (req, res) => {
         try {
             const newOrder = await order.save()
         } catch (err) {
-            res.status(400).json({ message: err.message })
+            console.log(err);
         };   
     // Else there is an existing order(s) that can partially/fully fill the new order
     } else {
@@ -210,7 +210,7 @@ router.post('/', async (req, res) => {
                             sell_order_id: sell_order_id.toString()
                         });
                         // IF SUCCESS, SAVE THE NEW ORDER AND AS FILLED
-                        const order = new Order({
+                        const newOrder = new Order({
                             //id: req.body.id,
                             user_id: req.body.user_id,
                             stock_symbol: req.body.stock_symbol,
@@ -220,7 +220,7 @@ router.post('/', async (req, res) => {
                             order_time: req.body.order_time,
                             is_filled: true
                         });
-                        await order.save()
+                        await newOrder.save()
                         // IF SUCCESS, BREAK LOOP
                         remaining_units = 0;
                         break;
@@ -259,7 +259,7 @@ router.post('/', async (req, res) => {
 
         // IF REMAINING UNITS NEEDED AFTER ALL MATCHED PAIRS ARE ITERATED THROUGH
         if (remaining_units > 0) {
-            const order = new Order({
+            const newOrder = new Order({
                 id: req.body.id,
                 user_id: req.body.user_id,
                 stock_symbol: req.body.stock_symbol,
@@ -270,9 +270,9 @@ router.post('/', async (req, res) => {
                 is_partially_filled: true
             });
             try {
-                const newOrder = await order.save()
+                await newOrder.save()
             } catch (err) {
-                res.status(400).json({ message: err.message })
+                console.log(err);
             };  
         };
 
