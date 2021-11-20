@@ -1,4 +1,4 @@
-GET http://localhost:3000/orders/619796176fe4da1209b1207c
+GET http://localhost:3000/orders/6199119d71657d5798176f83
 
 ###
 
@@ -17,13 +17,13 @@ content-type: application/json
     "user_id": "user3",
     "stock_symbol": "AMC",
     "order_type": "sell",
-    "units": 45,
-    "price": 50
+    "units": 14,
+    "price": 90
 }
 
 ###
 
-DELETE http://localhost:3000/61990c30a98738bda8db2a58
+DELETE http://localhost:3000/619913621bb7613d0ecaf65a
 
 ###
 

@@ -78,7 +78,7 @@ router.post('/test', async (req, res) => {
         }
     });
     console.log('POST test');
-    res.json(result);
+    res.status(200).json(result);
     //res.send(req.body);
     //res.send('test empty');
 });
@@ -88,7 +88,7 @@ router.get('/orders', async (req, res) => {
     try {
         const orders = await Order.find()
             .sort({ "order_time": -1 });
-        res.render('orders', {
+        res.status(200).render('orders', {
             orders
         });
     } catch (err) {
@@ -144,7 +144,7 @@ router.post('/', async (req, res) => {
     let transactionArr = []; 
     let matchResults;
     const order = new Order({
-        id: req.body.id,
+        //id: req.body.id,
         user_id: req.body.user_id,
         stock_symbol: req.body.stock_symbol,
         order_type: req.body.order_type,
@@ -222,32 +222,33 @@ router.post('/', async (req, res) => {
                         }
                     });
                     console.log(result);
-                    
-                    // POPULATE TRANSACTION
-                    transactionArr.push({
-                        stock_symbol: order.stock_symbol,
-                        units: remaining_units,
-                        price: Math.abs(
-                            (order.price + matchResults[i].price)/2
-                            ).toFixed(2),
-                        buy_order_id: buy_order_id.toString(),
-                        sell_order_id: sell_order_id.toString()
-                    });
-                    // SAVE THE NEW ORDER AND AS FILLED
-                    const newOrder = new Order({
-                        id: req.body.id,
-                        user_id: req.body.user_id,
-                        stock_symbol: req.body.stock_symbol,
-                        order_type: req.body.order_type,
-                        units: req.body.units,
-                        price: req.body.price,
-                        order_time: req.body.order_time,
-                        is_filled: true
-                    });
-                    await newOrder.save()
-                    // IF SUCCESS, BREAK LOOP
-                    remaining_units = 0;
-                    break;
+                    if(result) {
+                        // IF SUCCESS, POPULATE TRANSACTION
+                        transactionArr.push({
+                            stock_symbol: order.stock_symbol,
+                            units: remaining_units,
+                            price: Math.abs(
+                                (order.price + matchResults[i].price)/2
+                                ).toFixed(2),
+                            buy_order_id: buy_order_id.toString(),
+                            sell_order_id: sell_order_id.toString()
+                        });
+                        // IF SUCCESS, SAVE THE NEW ORDER AND AS FILLED
+                        const newOrder = new Order({
+                            //id: req.body.id,
+                            user_id: req.body.user_id,
+                            stock_symbol: req.body.stock_symbol,
+                            order_type: req.body.order_type,
+                            units: req.body.units,
+                            price: req.body.price,
+                            order_time: req.body.order_time,
+                            is_filled: true
+                        });
+                        await newOrder.save()
+                        // IF SUCCESS, BREAK LOOP
+                        remaining_units = 0;
+                        break;
+                    }
                 } catch (err) {
                     console.error(err);
                 }
@@ -277,7 +278,7 @@ router.post('/', async (req, res) => {
                         });
                         // IF SUCCESS, SAVE THE NEW ORDER AND AS FILLED
                         const order = new Order({
-                            id: req.body.id,
+                            //id: req.body.id,
                             user_id: req.body.user_id,
                             stock_symbol: req.body.stock_symbol,
                             order_type: req.body.order_type,
