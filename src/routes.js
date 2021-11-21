@@ -36,11 +36,12 @@ const saveTransactionArr = async (transactionArr) => {
 // GET all orders
 router.get('/orders', async (req, res) => {
     try {
-        const getOrders = await Order.find()
+        const orders = await Order.find()
             .sort({ "order_time": -1 });
-        res.status(200).render('orders', {
-            getOrders
+        res.render('orders', {
+            orders
         });
+        console.log(getOrders);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
