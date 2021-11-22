@@ -20,7 +20,6 @@ const getOrder = async (req, res, next) => {
 };
 
 const saveTransactionArr = async (transactionArr) => {
-    console.log('saving transaction array');
     if (!Array.isArray(transactionArr) || !transactionArr.length) {
         return;
     } else {
@@ -38,31 +37,30 @@ router.get('/orders', async (req, res) => {
     try {
         const orders = await Order.find()
             .sort({ "order_time": -1 });
-        res.render('orders', {
+        res.status(200).render('orders', {
             orders
         });
-        console.log(getOrders);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 });
 
 // GET all orders in JSON format
-router.get('/orders/JSON/', async (req, res) => {
+router.get('/orders/JSON', async (req, res) => {
     try {
         const orders = await Order.find();
-        res.json(orders)
+        res.status(200).json(orders)
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 });
 
 // GET all transactions
-router.get('/transactions/', async (req, res) => {
+router.get('/transactions', async (req, res) => {
     try {
         const transactions = await Transaction.find()
             .sort({ "transaction_time": -1 });;
-        res.render('transactions', {
+        res.status(200).render('transactions', {
             transactions
         });
     } catch (err) {
@@ -71,10 +69,10 @@ router.get('/transactions/', async (req, res) => {
 });
 
 // GET all transactions in JSON format
-router.get('/transactions/JSON/', async (req, res) => {
+router.get('/transactions/JSON', async (req, res) => {
     try {
         const transactions = await Transaction.find();
-        res.json(transactions);
+        res.status(200).json(transactions);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -95,7 +93,6 @@ router.post('/', async (req, res) => {
     let transactionArr = []; 
     let matchResults;
     const order = new Order({
-        id: req.body.id,
         user_id: req.body.user_id,
         stock_symbol: req.body.stock_symbol,
         order_type: req.body.order_type,
@@ -124,16 +121,16 @@ router.post('/', async (req, res) => {
                 ]
             }).sort({ "price": -1, "order_time": 1 })
     } catch (err) {
-        console.log(err);
+        res.status(400).json({ message: err.message });
     };
 
     // If the new order does not pair up partially/fully with any existing order
     // then create a new order
     if (!Array.isArray(matchResults) || !matchResults.length) {
         try {
-            const newOrder = await order.save()
+            await order.save()
         } catch (err) {
-            console.log(err);
+            res.status(400).json({ message: err.message });
         };   
     // Else there is an existing order(s) that can partially/fully fill the new order
     } else {
@@ -187,7 +184,7 @@ router.post('/', async (req, res) => {
                         break;
                     }
                 } catch (err) {
-                    console.error(err);
+                    res.status(400).json({ message: err.message });
                 }
             }
             else if(matchResults[i].units == remaining_units) {
@@ -227,7 +224,7 @@ router.post('/', async (req, res) => {
                         break;
                     }
                 } catch (err) {
-                    console.log(err);
+                    res.status(400).json({ message: err.message });
                 };
             } else { // ELSE: ONLY A PARTIAL FILL AND NEED TO GO TO NEXT ORDER
                 // DELETE EXISTING ORDER
@@ -253,7 +250,7 @@ router.post('/', async (req, res) => {
                         remaining_units -= matchResults[i].units;
                     }
                 } catch (err) {
-                    console.log(err);
+                    res.status(400).json({ message: err.message });
                 };
             }
         };
@@ -273,13 +270,13 @@ router.post('/', async (req, res) => {
             try {
                 await newOrder.save()
             } catch (err) {
-                console.log(err);
+                res.status(400).json({ message: err.message });
             };  
         };
 
         await saveTransactionArr(transactionArr);
     }
-    res.redirect('/orders');
+    res.status(200).redirect('/orders');
 });
 
 // UPDATE one (with middleware function)
@@ -315,7 +312,7 @@ router.delete('/:id', getOrder, async (req, res) => {
     if(!res.order.is_filled && !res.order.is_partially_filled) {
         try {
             await res.order.remove();
-            res.json({ 
+            res.status(200).json({ 
                 message: "Order has been successfully cancelled" })
         } catch (err) {
             res.status(500).json({ message: err.message })
