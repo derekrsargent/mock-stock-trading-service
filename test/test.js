@@ -83,10 +83,12 @@ describe('Trading', function() {
                             res.should.have.status(400);
                             res.body.should.be.a('object');
                             done();
-                    });
+                });
             });
         });
 
+        // Existing orders: None
+        // New Order: Buy 50 @ $1000 
         describe('POST correct order', function() {
             it('it should POST an order with all fields as required', function(done) {
                 const order = new Order({
@@ -107,6 +109,8 @@ describe('Trading', function() {
             });
         });
 
+        // Existing orders: Buy 50 @ $1000 
+        // New Order: None
         describe('GET order', function() {
             it('it should GET all orders', function(done) {
               chai.request(serverURL)
@@ -121,6 +125,8 @@ describe('Trading', function() {
             });
         });
 
+        // Existing orders: Buy 50 @ $1000 
+        // New Order: Sell 40 at $1000
         describe('Pairing order when existing order units > new order units', function() {
             it('existing order should be partially filled and new order filled', function(done) {
                 const order = new Order({
@@ -141,16 +147,152 @@ describe('Trading', function() {
             });
         });
 
+        // Existing transactions: 40 @ $1000 
         describe('GET transaction', function() {
             it('expecting 1 transaction', function(done) {
               chai.request(serverURL)
-                  .get('/transactions/JSON/')
-                  .end((err, res) => {
+                    .get('/transactions/JSON/')
+                    .end((err, res) => {
+                            res.should.have.status(200);
+                            res.body.should.be.a('array');
+                            res.body.length.should.be.eql(1);
+                            // Transactions sorted by new, so we can always access newest
+                            // entry using an index of 0
+                            res.body[0].price.should.be.eql(1000);
+                            res.body[0].units.should.be.eql(40);
+                            done();
+                    });
+            });
+        });
+
+        // Existing orders: Buy 10 @ $1000 
+        // New Order: Sell 30 at $900
+        describe('Pairing order when existing order units > new order units', function() {
+            it('existing order should be partially filled and new order filled', function(done) {
+                const order = new Order({
+                    user_id: 'test-user',
+                    stock_symbol: 'TEST',
+                    order_type: 'sell',
+                    units: 30,
+                    price: 900,
+                });
+                chai.request(serverURL)
+                    .post('/')
+                    .send(order)
+                    .end((err, res) => {
+                        res.should.have.status(200);
+                        res.body.should.be.a('object');
+                        done();
+                });
+            });
+        });
+
+        // Existing transactions: 50 @ $1000, 10 @ $950 
+        describe('GET transactions', function() {
+            it('expecting 2 transactions', function(done) {
+                chai.request(serverURL)
+                    .get('/transactions/JSON/')
+                    .end((err, res) => {
                         res.should.have.status(200);
                         res.body.should.be.a('array');
-                        res.body.length.should.be.eql(1);
+                        res.body.length.should.be.eql(2);
+                        // Transactions sorted by new, so we can always access newest
+                        // entry using an index of 0
+                        res.body[0].price.should.be.eql(950);
+                        res.body[0].units.should.be.eql(10);
                     done();
-                  });
+                });
+            });
+        });
+
+        // Existing orders: Sell 20 @ $900 
+        // New Order: Sell 30 at $800
+        describe('Selling more shares so that a large buy order can pair with multiple sell orders', 
+            function() {
+                it('POST additional sell order should be', function(done) {
+                    const order = new Order({
+                        user_id: 'test-user',
+                        stock_symbol: 'TEST',
+                        order_type: 'sell',
+                        units: 30,
+                        price: 800,
+                    });
+                    chai.request(serverURL)
+                        .post('/')
+                        .send(order)
+                        .end((err, res) => {
+                            res.should.have.status(200);
+                            res.body.should.be.a('object');
+                            done();
+                    });
+            });
+        });
+
+        // Existing orders: Sell 20 @ $900, sell 30 @ $800
+        // New Order: Sell 50 at $800
+        describe('Add another sell order at the same price as existing', function() {
+            it('check that older sell order at same price gets paired first', function(done) {
+                const order = new Order({
+                    user_id: 'test-user',
+                    stock_symbol: 'TEST',
+                    order_type: 'sell',
+                    units: 50,
+                    price: 800,
+                });
+                chai.request(serverURL)
+                    .post('/')
+                    .send(order)
+                    .end((err, res) => {
+                        res.should.have.status(200);
+                        res.body.should.be.a('object');
+                        done();
+                });
+            });
+        });
+
+        // Existing orders: Sell 20 @ $900, sell 30 @ $800, sell 50 at $800
+        // New Order: Buy 100 at $1001.55
+        describe('Pairing buy order when it will span multiple existing sell orders', function() {
+            it('sell order should be filled in the sequence of 30, 50, 10 units based on price-time priorty', 
+                function(done) {
+                    const order = new Order({
+                        user_id: 'test-user',
+                        stock_symbol: 'TEST',
+                        order_type: 'buy',
+                        units: 100,
+                        price: 1001.55,
+                    });
+                    chai.request(serverURL)
+                        .post('/')
+                        .send(order)
+                        .end((err, res) => {
+                            res.should.have.status(200);
+                            res.body.should.be.a('object');
+                            done();
+                    });
+            });
+        });
+
+        // Existing transactions: 40 @ $1000, 10 @ $950, 30 @ $900.77, 50 @ $900.77, 20 @ 950.77  
+        describe('GET transactions', function() {
+            it('expecting 5 transactions', function(done) {
+                chai.request(serverURL)
+                    .get('/transactions/JSON/')
+                    .end((err, res) => {
+                        res.should.have.status(200);
+                        res.body.should.be.a('array');
+                        res.body.length.should.be.eql(5);
+                        console.log(res.body)
+                        // Transactions sorted by new, so we can always access newest
+                        // entry using an index of 0
+                        res.body[0].price.should.be.eql(950.77);
+                        res.body[0].units.should.be.eql(20);
+                        res.body[1].price.should.be.eql(900.77);
+                        res.body[1].units.should.be.eql(50);
+                        res.body[2].price.should.be.eql(900.77);
+                        res.body[2].units.should.be.eql(30);
+                    done();
+                });
             });
         });
     });

@@ -24,7 +24,12 @@ const saveTransactionArr = async (transactionArr) => {
         return;
     } else {
         try {
-            await Transaction.insertMany(transactionArr);
+            // insertMany doesn't wirte to db sequentally which breaks testing
+            // since exact sequence is important for Price-Time Priority testing
+            for(let i in transactionArr) {
+                const transaction = new Transaction(transactionArr[i])
+                await transaction.save();
+            };
         } catch (err) {
             console.log(err);
         };  
@@ -48,7 +53,8 @@ router.get('/orders', async (req, res) => {
 // GET all orders in JSON format
 router.get('/orders/JSON', async (req, res) => {
     try {
-        const orders = await Order.find();
+        const orders = await Order.find()
+            .sort({ "order_time": 1 });
         res.status(200).json(orders)
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -59,7 +65,7 @@ router.get('/orders/JSON', async (req, res) => {
 router.get('/transactions', async (req, res) => {
     try {
         const transactions = await Transaction.find()
-            .sort({ "transaction_time": -1 });;
+            .sort({ "transaction_time": -1 });
         res.status(200).render('transactions', {
             transactions
         });
@@ -71,7 +77,8 @@ router.get('/transactions', async (req, res) => {
 // GET all transactions in JSON format
 router.get('/transactions/JSON', async (req, res) => {
     try {
-        const transactions = await Transaction.find();
+        const transactions = await Transaction.find()
+            .sort({ "transaction_time": -1 });
         res.status(200).json(transactions);
     } catch (err) {
         res.status(500).json({ message: err.message });
