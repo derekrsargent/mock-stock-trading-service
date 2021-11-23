@@ -24,7 +24,7 @@ const saveTransactionArr = async (transactionArr) => {
         return;
     } else {
         try {
-            // insertMany doesn't wirte to db sequentally which breaks testing
+            // insertMany doesn't write to db sequentally which breaks testing
             // since exact sequence is important for Price-Time Priority testing
             for(let i in transactionArr) {
                 const transaction = new Transaction(transactionArr[i])
@@ -87,7 +87,7 @@ router.get('/transactions/JSON', async (req, res) => {
 
 // GET one by id
 router.get('/orders/:id', getOrder, (req, res) => {
-    res.send(res.order);
+    res.status(200).json(res.order);
 });
 
 // GET index page
@@ -106,6 +106,8 @@ router.post('/', async (req, res) => {
         units: req.body.units,
         price: req.body.price,
         order_time: req.body.order_time,
+        is_filled: false,
+        is_partially_filled: false
     });
 
     try {
@@ -175,17 +177,8 @@ router.post('/', async (req, res) => {
                             sell_order_id: sell_order_id.toString()
                         });
                         // IF SUCCESS, SAVE THE NEW ORDER AND AS FILLED
-                        const newOrder = new Order({
-                            //id: req.body.id,
-                            user_id: req.body.user_id,
-                            stock_symbol: req.body.stock_symbol,
-                            order_type: req.body.order_type,
-                            units: req.body.units,
-                            price: req.body.price,
-                            order_time: req.body.order_time,
-                            is_filled: true
-                        });
-                        await newOrder.save()
+                        order.is_filled = true;
+                        await order.save(); 
                         // IF SUCCESS, BREAK LOOP
                         remaining_units = 0;
                         break;
@@ -215,17 +208,8 @@ router.post('/', async (req, res) => {
                             sell_order_id: sell_order_id.toString()
                         });
                         // IF SUCCESS, SAVE THE NEW ORDER AND AS FILLED
-                        const newOrder = new Order({
-                            //id: req.body.id,
-                            user_id: req.body.user_id,
-                            stock_symbol: req.body.stock_symbol,
-                            order_type: req.body.order_type,
-                            units: req.body.units,
-                            price: req.body.price,
-                            order_time: req.body.order_time,
-                            is_filled: true
-                        });
-                        await newOrder.save()
+                        order.is_filled = true;
+                        await order.save(); 
                         // IF SUCCESS, BREAK LOOP
                         remaining_units = 0;
                         break;
@@ -264,18 +248,11 @@ router.post('/', async (req, res) => {
 
         // IF REMAINING UNITS NEEDED AFTER ALL MATCHED PAIRS ARE ITERATED THROUGH
         if (remaining_units > 0) {
-            const newOrder = new Order({
-                id: req.body.id,
-                user_id: req.body.user_id,
-                stock_symbol: req.body.stock_symbol,
-                order_type: req.body.order_type,
-                units: remaining_units,
-                price: req.body.price,
-                order_time: req.body.order_time,
-                is_partially_filled: true
-            });
+            order.units = remaining_units;
+            order.is_partially_filled = true;
+
             try {
-                await newOrder.save()
+                await order.save()
             } catch (err) {
                 res.status(400).json({ message: err.message });
             };  
