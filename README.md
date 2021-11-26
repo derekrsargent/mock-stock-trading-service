@@ -6,7 +6,7 @@ Install MongoDB if not previously installed.
 `npm run server` to start running server.
 `npm run test` to start mocha tests. 
 
-Homepage is located at http://127.0.0.1:3000/
+Homepage is located at http://localhost:3000/
 
 Frontend is fully functional for endpoints except PATCH existing order.
 

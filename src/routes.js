@@ -37,6 +37,27 @@ const saveTransactionArr = async (transactionArr) => {
     return;
 };
 
+const updateFilledOrderArr = async (filledOrderArr) => {
+    if (!Array.isArray(filledOrderArr) || !filledOrderArr.length) {
+        return;
+    } else {
+        try {
+            for (let i in filledOrderArr) {
+                await Order.updateOne(
+                    { _id: filledOrderArr[i] }, 
+                    { $set: { 
+                        is_filled: true, 
+                        units: 0 }
+                    },
+                );
+            };
+        } catch (err) {
+            console.log(err);
+        };  
+    };
+    return;
+};
+
 // GET all orders
 router.get('/orders', async (req, res) => {
     try {
@@ -98,11 +119,27 @@ router.get('/', async (req, res) => {
 // CREATE one order
 router.post('/', async (req, res) => {
     let transactionArr = []; 
-    let matchResults;
+    let filledOrderArr = [];
+    let topPairResult; 
+
+    if (
+        req.body.units <= 0 || 
+        req.body.price <= 0 || 
+        req.body.stock_symbol === '' ||
+        req.body.user_id === '' ||
+        !req.body.units ||
+        !req.body.price ||
+        !req.body.stock_symbol ||
+        !req.body.user_id
+    ) {
+        return res.status(400).json({ message: 'Invalid order input' });
+    };
+
     const order = new Order({
         user_id: req.body.user_id,
         stock_symbol: req.body.stock_symbol,
         order_type: req.body.order_type,
+        original_units: req.body.units,
         units: req.body.units,
         price: req.body.price,
         order_time: req.body.order_time,
@@ -110,156 +147,118 @@ router.post('/', async (req, res) => {
         is_partially_filled: false
     });
 
-    try {
-        order.order_type === "buy" ?
-            matchResults = await Order.find({
-                $and: [
-                    { stock_symbol: order.stock_symbol }, 
-                    { order_type: "sell" },
-                    { price: { $lte: order.price }},
-                    { is_filled: false },
-                ]
-            }).sort({ "price": 1, "order_time": 1 })
+    const searchForPair = async () => {
+        const order_type = order.order_type === 'buy' ?
+            'sell' : 'buy';
+        const price = order.order_type === 'buy' ?
+            1 : -1;
+
+        const filter = order.order_type === 'buy' ?
+            { 
+                stock_symbol: order.stock_symbol, 
+                order_type,
+                price: { $lte: order.price },
+                units: { $gt: 0 },
+                is_filled: false,
+            }
             :
-            matchResults = await Order.find({
-                $and: [
-                    { stock_symbol: order.stock_symbol }, 
-                    { order_type: "buy" },
-                    { price: { $gte: order.price }},
-                    { is_filled: false },
-                ]
-            }).sort({ "price": -1, "order_time": 1 })
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    };
-
-    // If the new order does not pair up partially/fully with any existing order
-    // then create a new order
-    if (!Array.isArray(matchResults) || !matchResults.length) {
-        try {
-            await order.save()
-        } catch (err) {
-            res.status(400).json({ message: err.message });
-        };   
-    // Else there is an existing order(s) that can partially/fully fill the new order
-    } else {
-        let remaining_units = order.units;
-
-        for(let i in matchResults) {
-            const buy_order_id = order.order_type === "buy" ? 
-                order._id : matchResults[i]._id;
-            const sell_order_id = order.order_type === "sell" ? 
-                order._id : matchResults[i]._id;
-
-            if(remaining_units <= 0) {
-                break;
-            };
-
-            if(matchResults[i].units > remaining_units) {
-                // MODIFY EXISTING ORDER TO REDUCE IT
-                try {
-                    const result = 
-                        await Order.updateOne( {"_id": matchResults[i]._id.toString()}, {
-                            $set: {
-                                "units": matchResults[i].units - remaining_units,
-                                "is_partially_filled": true
-                            }
-                    });
-                    if(result) {
-                        // IF SUCCESS, POPULATE TRANSACTION
-                        transactionArr.push({
-                            stock_symbol: order.stock_symbol,
-                            units: remaining_units,
-                            price: Math.abs(
-                                (order.price + matchResults[i].price)/2
-                                ).toFixed(2),
-                            buy_order_id: buy_order_id.toString(),
-                            sell_order_id: sell_order_id.toString()
-                        });
-                        // IF SUCCESS, SAVE THE NEW ORDER AND AS FILLED
-                        order.is_filled = true;
-                        await order.save(); 
-                        // IF SUCCESS, BREAK LOOP
-                        remaining_units = 0;
-                        break;
-                    }
-                } catch (err) {
-                    res.status(400).json({ message: err.message });
-                }
+            { 
+                stock_symbol: order.stock_symbol, 
+                order_type,
+                price: { $gte: order.price },
+                units: { $gt: 0 },
+                is_filled: false,
             }
-            else if(matchResults[i].units == remaining_units) {
-                // UPDATE EXISTING ORDER TO BE FILLED
-                try {
-                    const result = 
-                        await Order.updateOne( {"_id": matchResults[i]._id.toString()}, {
-                            $set: {
-                                "is_filled": true
-                            }
-                        });
-                    if(result) {
-                        // IF SUCCESS, POPULATE TRANSACTION
-                        transactionArr.push({
-                            stock_symbol: order.stock_symbol,
-                            units: remaining_units,
-                            price: Math.abs(
-                                (order.price + matchResults[i].price)/2
-                                ).toFixed(2),
-                            buy_order_id: buy_order_id.toString(),
-                            sell_order_id: sell_order_id.toString()
-                        });
-                        // IF SUCCESS, SAVE THE NEW ORDER AND AS FILLED
-                        order.is_filled = true;
-                        await order.save(); 
-                        // IF SUCCESS, BREAK LOOP
-                        remaining_units = 0;
-                        break;
-                    }
-                } catch (err) {
-                    res.status(400).json({ message: err.message });
-                };
-            } else { // ELSE: ONLY A PARTIAL FILL AND NEED TO GO TO NEXT ORDER
-                // DELETE EXISTING ORDER
-                try {
-                    const result = 
-                        await Order.updateOne( {"_id": matchResults[i]._id.toString()}, {
-                            $set: {
-                                "is_filled": true
-                            }
-                    });
-                    if(result) {
-                        // IF SUCCESS, POPULATE TRANSACTION
-                        transactionArr.push({
-                            stock_symbol: order.stock_symbol,
-                            units: matchResults[i].units,
-                            price: Math.abs(
-                                (order.price + matchResults[i].price)/2
-                                ).toFixed(2),
-                            buy_order_id: buy_order_id.toString(),
-                            sell_order_id: sell_order_id.toString()
-                        });
-                        // IF SUCCESS, DECREMENT remaining_units
-                        remaining_units -= matchResults[i].units;
-                    }
-                } catch (err) {
-                    res.status(400).json({ message: err.message });
-                };
-            }
+
+        const update = {
+            $inc: { units: -order.units },
+            $set: { is_partially_filled: true}
         };
+        const options = {
+            sort: {
+                price,
+                order_time: 1
+            },
+            new: true
+        };
+        try {
+            return await Order.findOneAndUpdate(filter, update, options);
+        } catch (err) {
+            return null;
+        }
+    }
 
-        // IF REMAINING UNITS NEEDED AFTER ALL MATCHED PAIRS ARE ITERATED THROUGH
-        if (remaining_units > 0) {
-            order.units = remaining_units;
-            order.is_partially_filled = true;
+    let remaining_units = order.units;
+    while (remaining_units > 0) {
+        topPairResult = await searchForPair();
 
+        // No matching trading pair is found
+        if (!topPairResult) {
             try {
+                // Since this could be after some pairing iterations 
+                order.units = remaining_units;
+                if (remaining_units > 0 && order.units !== remaining_units) {
+                    order.is_partially_filled = true;
+                }
                 await order.save()
             } catch (err) {
-                res.status(400).json({ message: err.message });
+                return res.status(400).json({ message: err.message });
             };  
-        };
+            break;
+        // A matching trading pair is found
+        } else {
+            const buy_order_id = order.order_type === 'buy' ? 
+                order._id : topPairResult._id;
+            const sell_order_id = order.order_type === 'sell' ? 
+                order._id : topPairResult._id;
 
-        await saveTransactionArr(transactionArr);
-    }
+            // If one existing order can fill the entire new order
+            if (topPairResult.units >= 0) { 
+                transactionArr.push({
+                    stock_symbol: order.stock_symbol,
+                    units: remaining_units,
+                    price: Math.abs(
+                        (order.price + topPairResult.price)/2
+                        ).toFixed(2),
+                    buy_order_id: buy_order_id.toString(),
+                    sell_order_id: sell_order_id.toString()
+                });
+
+                remaining_units = 0;
+                order.units = 0;
+                order.is_partially_filled = true;
+                order.is_filled = true;
+                await order.save()
+
+            // It will take multiple orders
+            } else {
+                transactionArr.push({
+                    stock_symbol: order.stock_symbol,
+                    units: order.units - Math.abs(topPairResult.units),
+                    price: Math.abs(
+                        (order.price + topPairResult.price)/2
+                        ).toFixed(2),
+                    buy_order_id: buy_order_id.toString(),
+                    sell_order_id: sell_order_id.toString()
+                });
+
+                remaining_units = Math.abs(topPairResult.units);
+                order.units = remaining_units;
+                order.is_partially_filled = true;
+                order.is_filled = false;
+                await order.save()
+
+                filledOrderArr.push(topPairResult._id.toString());
+            };
+        };
+    };
+
+    // SAVE THE TRANSACTIONS TO DB AT THE END TO NOT DELAY ORDER MATCHING
+    await saveTransactionArr(transactionArr);
+    
+    // UPDATE THE NEGATIVE UNITS TO ZERO IN DB AT THE END TO NOT DELAY ORDER MATCHING
+    await updateFilledOrderArr(filledOrderArr);
+
     res.status(200).redirect('/orders');
 });
 

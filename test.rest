@@ -15,10 +15,10 @@ content-type: application/json
 
 {
     "user_id": "user3",
-    "stock_symbol": "TRY",
-    "order_type": "buy",
-    "units": 11,
-    "price": 800
+    "stock_symbol": "TEST10",
+    "order_type": "sell",
+    "units": 21,
+    "price": 20000
 }
 
 ###
@@ -36,14 +36,3 @@ content-type: application/json
 }
 
 ###
-
-POST http://localhost:3000/test
-content-type: application/json
-
-{
-    "_id": "619913621bb7613d0ecaf65a",
-    "units": 44
-}
-
-###
-

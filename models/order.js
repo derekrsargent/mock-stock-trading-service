@@ -13,6 +13,10 @@ const orderSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    original_units: {
+        type: Number,
+        required: true
+    },
     units: {
         type: Number,
         required: true
