@@ -27,7 +27,7 @@ describe('Trading', function() {
          });
     });
 
-    describe('GET order', function() {
+    describe('GET orders', function() {
         it('should GET all orders', function(done) {
           chai.request(serverURL)
               .get('/orders/JSON/')
@@ -40,7 +40,7 @@ describe('Trading', function() {
         });
     });
 
-    describe('GET transaction', function() {
+    describe('GET transactions', function() {
         it('should GET all transactions', function(done) {
           chai.request(serverURL)
               .get('/transactions/JSON/')
@@ -113,7 +113,7 @@ describe('Trading', function() {
 
     // Existing orders: Buy 50 @ $1000 
     // New Order: None
-    describe('GET order', function() {
+    describe('GET orders', function() {
         it('should GET all orders', function(done) {
             chai.request(serverURL)
                 .get('/orders/JSON/')
@@ -149,7 +149,7 @@ describe('Trading', function() {
     });
 
     // Existing transactions: 40 @ $1000 
-    describe('GET transaction', function() {
+    describe('GET transactions', function() {
         it('expecting 1 transaction', function(done) {
             chai.request(serverURL)
                 .get('/transactions/JSON/')
@@ -349,7 +349,7 @@ describe('Trading', function() {
         });
     });
 
-    describe('GET order', function() {
+    describe('GET orders', function() {
         it('should GET all orders before one uses DELETE', function(done) {
           chai.request(serverURL)
               .get('/orders/JSON/')
@@ -375,7 +375,7 @@ describe('Trading', function() {
         });
     });
 
-    describe('GET order', function() {
+    describe('GET orders', function() {
         it('should GET all orders after one uses DELETE', function(done) {
           chai.request(serverURL)
               .get('/orders/JSON/')
@@ -388,4 +388,154 @@ describe('Trading', function() {
         });
     });
 
+    describe('Place orders so that we can test PATCH', function() {
+        it('should POST a sell order', function(done) {
+            const order = new Order({
+                user_id: 'test-user',
+                stock_symbol: 'PATCH-TEST',
+                order_type: 'sell',
+                units: 50,
+                price: 800,
+            });
+            chai.request(serverURL)
+                .post('/')
+                .send(order)
+                .end((err, res) => {
+                    res.should.have.status(200);
+                    res.body.should.be.a('object');
+                    done();
+            });
+        });
+        it('should POST a non-pairing buy order without a transaction', function(done) {
+            const order = new Order({
+                user_id: 'test-user',
+                stock_symbol: 'PATCH-TEST',
+                order_type: 'buy',
+                units: 50,
+                price: 700,
+            });
+            chai.request(serverURL)
+                .post('/')
+                .send(order)
+                .end((err, res) => {
+                    res.should.have.status(200);
+                    res.body.should.be.a('object');
+                    done();
+            });
+        });
+        it('should GET order_id for buy order', function(done) {
+            chai.request(serverURL)
+                .get('/orders/JSON/')
+                .end((err, res) => {
+                      res.should.have.status(200);
+                      res.body.should.be.a('array');
+                      res.body.length.should.be.eql(9);
+                      order_id = res.body[8]._id;
+                      done();
+                });
+          });
+    });
+
+    describe('try to PATCH existing buy order with incorrect fields', function() {
+        it('should not allow PATCH', function(done) {
+            const order = new Order({
+                wrong_field: "wrong_field"
+            });
+            chai.request(serverURL)
+                .patch('/' + order_id)
+                .send(order)
+                .end((err, res) => {
+                    res.should.have.status(405);
+                    done();
+            });
+        });
+    });
+
+    describe('try to PATCH existing buy order with incorrect fields', function() {
+        it('should not allow PATCH', function(done) {
+            const order = new Order({
+                price: 6000,
+                units: 500,
+                wrong_field: "wrong_field"
+            });
+            chai.request(serverURL)
+                .patch('/' + order_id)
+                .send(order)
+                .end((err, res) => {
+                    res.should.have.status(405);
+                    done();
+            });
+        });
+    });
+
+    // Exisiting TEST-PATCH orders are now sell 50 for $800, buy 50 for $700
+    describe('PATCH existing buy order to increase units only', function() {
+        it('should increase units without any pairing', function(done) {
+            const order = {
+                units: 100,
+            };
+            chai.request(serverURL)
+                .patch('/' + order_id)
+                .send(order)
+                .end((err, res) => {
+                    res.should.have.status(200);
+                    res.body.should.be.a('object');
+                    done();
+            });
+        });
+        it('should GET buy order having 100 units still at price of $700 now', function(done) {
+            chai.request(serverURL)
+                .get('/orders/' + order_id)
+                .end((err, res) => {
+                        res.should.have.status(200);
+                        res.body.should.be.a('object');
+                        res.body.units.should.be.eql(100);
+                        res.body.price.should.be.eql(700);
+                        done();
+            });
+        });
+    });
+
+    // Exisiting TEST-PATCH orders are now sell 50 for $800, buy 100 for $700
+    describe('PATCH existing buy order to increase both price and units', function() {
+        it('should pair with existing sell order', function(done) {
+            const order = {
+                units: 200,
+                price: 801
+            };
+            chai.request(serverURL)
+                .patch('/' + order_id)
+                .send(order)
+                .end((err, res) => {
+                    res.should.have.status(200);
+                    res.body.should.be.a('object');
+                    done();
+            });
+        });
+        it('should GET buy order having 200-50=150 units and $801 price', function(done) {
+            chai.request(serverURL)
+                .get('/orders/' + order_id)
+                .end((err, res) => {
+                        res.should.have.status(200);
+                        res.body.should.be.a('object');
+                        res.body.original_units.should.be.eql(200);
+                        res.body.units.should.be.eql(150);
+                        res.body.price.should.be.eql(801);
+                        done();
+            });
+        });
+        it('expecting 10 transactions now', function(done) {
+            chai.request(serverURL)
+                .get('/transactions/JSON/')
+                .end((err, res) => {
+                        res.should.have.status(200);
+                        res.body.should.be.a('array');
+                        res.body.length.should.be.eql(6);
+                        // Note that transactions is sorted by new
+                        res.body[0].price.should.be.eql(800.5);
+                        res.body[0].units.should.be.eql(50);
+                        done();
+                });
+        });
+    });
 });
