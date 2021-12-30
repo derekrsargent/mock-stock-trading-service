@@ -1,4 +1,4 @@
-# ps-assessment
+# mock-stock-trading-service
 
 node_modules excluded from .gitignore so `npm install` not required.
 Install MongoDB if not previously installed.
